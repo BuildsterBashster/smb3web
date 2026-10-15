@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Super Mario Bros. 3</title>
+<style>
+  :root {
+    --stage: #000;
+    --cream: #F2E6C9;
+    --gold: #F5B700;
+    --muted: #A89F8C;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: var(--stage);
+    color: var(--cream);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.5;
+  }
+
+  #game {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  .picker {
+    position: fixed;
+    inset: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 24px;
+    text-align: center;
+    border: 2px dashed #4A4036;
+    border-radius: 4px;
+    transition: border-color .15s, background .15s;
+  }
+  .picker.dragover { border-color: var(--gold); background: rgba(245, 183, 0, .06); }
+  .picker h2 { margin: 0; font-size: 1.15rem; font-weight: 600; }
+  .picker p { margin: 0; color: var(--muted); font-size: .9rem; max-width: 34ch; }
+  .picker button {
+    appearance: none;
+    border: 0;
+    background: var(--gold);
+    color: #1B1400;
+    font: inherit;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .picker button:hover { background: #FFC81F; }
+  .picker button:focus-visible { outline: 2px solid var(--cream); outline-offset: 3px; }
+  .error { color: #FF8A7A; min-height: 1.4em; font-size: .9rem; }
+
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+
+<div id="game" hidden></div>
+
+<div class="picker" id="picker" hidden>
+  <h2>Choose your ROM file</h2>
+  <p>Select or drop your Super Mario Bros. 3 .nes file. It stays in your browser and is not uploaded anywhere.</p>
+  <button type="button" id="choose">Choose file</button>
+  <input type="file" id="rom" accept=".nes" hidden>
+  <div class="error" id="error" role="alert"></div>
+</div>
+
+<script>
+  // If a file named smb3.nes sits next to this page, it loads automatically.
+  // Otherwise the page asks the visitor to choose their own ROM.
+  var DEFAULT_ROM = 'smb3.nes';
+
+  var picker = document.getElementById('picker');
+  var game = document.getElementById('game');
+  var input = document.getElementById('rom');
+  var errorBox = document.getElementById('error');
+  var started = false;
+
+  function start(url) {
+    if (started) return;
+    started = true;
+    picker.hidden = true;
+    game.hidden = false;
+
+    window.EJS_player = '#game';
+    window.EJS_core = 'nes';
+    window.EJS_gameUrl = url;
+    window.EJS_gameName = 'Super Mario Bros. 3';
+    window.EJS_pathtodata = 'data/';
+    window.EJS_color = '#C8261C';
+
+    var s = document.createElement('script');
+    s.src = 'data/loader.js';
+    document.body.appendChild(s);
+  }
+
+  function handleFile(file) {
+    errorBox.textContent = '';
+    if (!file) return;
+    if (!/\.nes$/i.test(file.name)) {
+      errorBox.textContent = 'That is not a .nes file. Choose a file that ends in .nes.';
+      return;
+    }
+    start(URL.createObjectURL(file));
+  }
+
+  document.getElementById('choose').addEventListener('click', function () { input.click(); });
+  input.addEventListener('change', function () { handleFile(input.files[0]); });
+
+  picker.addEventListener('dragover', function (e) { e.preventDefault(); picker.classList.add('dragover'); });
+  picker.addEventListener('dragleave', function () { picker.classList.remove('dragover'); });
+  picker.addEventListener('drop', function (e) {
+    e.preventDefault();
+    picker.classList.remove('dragover');
+    handleFile(e.dataTransfer.files[0]);
+  });
+
+  fetch(DEFAULT_ROM, { method: 'HEAD' })
+    .then(function (r) { if (r.ok) { start(DEFAULT_ROM); } else { picker.hidden = false; } })
+    .catch(function () { picker.hidden = false; });
+</script>
+
+</body>
+</html>
